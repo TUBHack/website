@@ -90,8 +90,9 @@
                 Komm vorbei!
             </p>
 
-            <form class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm mx-auto">
-                <input type="email" placeholder="deine@email.com"
+            <form id="newsletter-form" action="https://formspree.io/f/xnnegqdy" method="POST"
+                class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm mx-auto">
+                <input type="email" name="email" placeholder="deine@email.com"
                     class="w-full px-5 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/20 text-white placeholder-neutral-500 transition-all font-medium"
                     required>
                 <button type="submit"
@@ -99,6 +100,8 @@
                     <span>Anmelden</span>
                 </button>
             </form>
+            <div id="newsletter-status"
+                class="hidden mt-4 text-center p-4 rounded-lg bg-white/5 border border-white/10 text-neutral-300"></div>
         </div>
     </main>
 
@@ -116,6 +119,60 @@
 
     <script>
         lucide.createIcons();
+
+        // AJAX Form Submission for Formspree
+        const form = document.getElementById("newsletter-form");
+        const status = document.getElementById("newsletter-status");
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const data = new FormData(event.target);
+            const submitBtn = form.querySelector('button');
+            const originalBtnContent = submitBtn.innerHTML;
+
+            // Loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Senden...</span>`;
+
+            try {
+                const response = await fetch(event.target.action, {
+                    method: form.method,
+                    body: data,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    // Success state
+                    form.classList.add('hidden');
+                    status.classList.remove('hidden');
+                    status.innerHTML = "🎉 Danke fürs Anmelden! Wir melden uns.";
+                    form.reset();
+                } else {
+                    // Error state from Formspree
+                    const msg = await response.json();
+                    throw new Error(msg.errors.map(error => error.message).join(', '));
+                }
+            } catch (error) {
+                // Network or other error
+                status.classList.remove('hidden');
+                status.classList.add('bg-red-500/10', 'border-red-500/20', 'text-red-200');
+                status.innerHTML = "Upps! Da ist was schiefgelaufen. Bitte versuche es später noch einmal.";
+
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+
+                // Hide error after 5 seconds
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                    status.classList.remove('bg-red-500/10', 'border-red-500/20', 'text-red-200');
+                }, 5000);
+            }
+        }
+
+        form.addEventListener("submit", handleSubmit);
     </script>
 </body>
 
